@@ -26,8 +26,8 @@ public class RestaurantService {
 	@Autowired
 	private  RestaurantRepository restaurantRepo;
 	
-	@Autowired
-	private CustomerRepository customerRepo;
+//	@Autowired
+//	private CustomerRepository customerRepo;
 	
 	@Autowired
 	private RestTemplate restTemplate;
@@ -159,14 +159,6 @@ public class RestaurantService {
 	}
 
 
-	public List<Restaurant> SearchItemOrRestaurant(String phone, String searchKey) {
-		Customer customer=customerRepo.findByPhone(phone);
-		if(customer==null) {
-			throw new RuntimeException("Customer Not Found");
-		}
-		String city=customer.getAddresses().get(0).getCity();
-		List<Restaurant> restaurants=restaurantRepo.findByAddress_City(city);
-		return restaurants.stream().filter((Restaurant r) -> r.getMenuItems().stream().anyMatch(menu -> menu.getName().toLowerCase().contains(searchKey.toLowerCase()))).toList();
-	}
+	
 
 }

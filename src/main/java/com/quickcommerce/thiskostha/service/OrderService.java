@@ -16,6 +16,7 @@ import com.quickcommerce.thiskostha.entity.Address;
 import com.quickcommerce.thiskostha.entity.CartItem;
 import com.quickcommerce.thiskostha.entity.Customer;
 import com.quickcommerce.thiskostha.entity.Order;
+import com.quickcommerce.thiskostha.entity.OrderStatus;
 import com.quickcommerce.thiskostha.entity.Restaurant;
 import com.quickcommerce.thiskostha.repository.CustomerRepository;
 import com.quickcommerce.thiskostha.repository.OrderRepository;
@@ -108,17 +109,17 @@ public class OrderService {
       
         total+=restaurant.getPackagefees();
         total+=charges;
-        // Create order
+      
         Order order = new Order();
-        order.setStatus("pending");
+//       
         order.setCost(total);
-        if (method == "COD")
-            order.setPaymentStatus("PENDING");
-        else
-            order.setPaymentStatus("COMPLETED");
+//        if (method == "COD")
+//            order.setPaymentStatus("PENDING");
+//        else
+//            order.setPaymentStatus("COMPLETED");
+//        order.setDeliveryStatus("PENDING");
         order.setOrderTime(LocalDateTime.now());
-        order.setDeliverTime(LocalDateTime.now().plusMinutes((durationSeconds/60)+10));
-        order.setDeliveryStatus("PENDING");
+        order.setDeliveryTime(LocalDateTime.now().plusMinutes((durationSeconds/60)+10));
         order.setRestaurant(restaurant);
         order.setCustomer(customer);
         order.setItems(cartItems);
@@ -128,6 +129,8 @@ public class OrderService {
         order.setDeliveryCharges(charges);
         order.setPickupAddress(restaurant.getAddress());
         order.setDeliveryAddress(deliveryAddress);
+        order.setPackagingFee(restaurant.getPackagefees());
+        
         
        customer.getOrders().add(order);
        customerRepo.save(customer);
@@ -138,7 +141,7 @@ public class OrderService {
         rs.setMessage("Order placed successfully");
         rs.setData(order);
 
-        return ResponseEntity.ok(rs);
+        return new ResponseEntity<ResponseStructure<Order>>(rs,HttpStatus.OK);
     
 	}
 
