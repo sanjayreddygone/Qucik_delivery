@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.quickcommerce.thiskostha.dto.CartResponse;
 import com.quickcommerce.thiskostha.dto.CustomerAddressDTO;
 import com.quickcommerce.thiskostha.dto.CustomerDTO;
+import com.quickcommerce.thiskostha.dto.OrderConsent;
 import com.quickcommerce.thiskostha.dto.ResponseStructure;
 import com.quickcommerce.thiskostha.dto.SearchResponse;
 import com.quickcommerce.thiskostha.entity.Address;
@@ -69,7 +70,7 @@ public class CustomerController {
 	}
 	
 	@PostMapping("/placeorder")
-    public ResponseEntity<ResponseStructure<Order>> placeOrder(
+    public ResponseEntity<ResponseStructure<OrderConsent>> placeOrder(
             @RequestParam String phone,
             @RequestParam String method,
             @RequestParam String addressType, 
@@ -79,10 +80,15 @@ public class CustomerController {
     }
 	
 	
-	@DeleteMapping("/order/{orderId}/cancel")
-	public ResponseEntity<ResponseStructure<Order>> cancelOrder(
-			@PathVariable Long orderId,
-			@RequestParam String customerPhone) {
-		return orderService.cancelOrder(orderId, customerPhone);
-	}
+	 @PostMapping("/ConfirmPlacingOrder")
+	    public ResponseEntity<ResponseStructure<Order>> confirmPlacingOrder(@RequestParam Long orderid) {
+	       return  orderService.confirmPlacingOrder(orderid);
+	        
+	    }
+
+	    @PostMapping("/denyPlacingOrder")
+	    public ResponseEntity<ResponseStructure<Order>> denyPlacingOrder(@RequestParam Long orderid) {
+	        return orderService.denyPlacingOrder(orderid);
+        
+	    }
 }

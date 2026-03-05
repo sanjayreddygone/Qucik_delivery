@@ -20,45 +20,67 @@ import org.springframework.stereotype.Service;
 @Service
 public class RedisService {
 
-    @Autowired
-    private RedisTemplate<String, String> redisTemplate;
+	
+	 @Autowired
+	    private RedisTemplate<String,String> redisTemplate;
+
+	    public String updateDpLoc(Integer partnerid,double latitude,double longitude){
+	        redisTemplate.opsForGeo().add("deliverypartner:location",new Point(longitude,latitude),partnerid.toString());
+	        return "LOC UPDATED";
+	    }
 
 
-    private static final String KEY = "deliverypartner:location";
-
-    
-    public String updateDPloc(Integer dpid, double latitude, double longitude) {
-
-        redisTemplate.opsForGeo()
-                .add(KEY,
-                        new Point(longitude, latitude), 
-                        dpid.toString());
-
-        return "Location Updated Successfully";
-    }
-
-  
-    public List<String> findNearbyPartners(
-            double latitude,
-            double longitude,
-            double radiusKm) {
-
-        Circle searchArea = new Circle(
-                new Point(longitude, latitude),
-                new Distance(radiusKm, Metrics.KILOMETERS)
-        );
-
-        GeoResults<RedisGeoCommands.GeoLocation<String>> results =
-                redisTemplate.opsForGeo().radius(KEY, searchArea);
-
-        if (results == null) {
-            return List.of();
-        }
-
-        return results.getContent()
-                .stream()
-                .map(result -> result.getContent().getName())
-                .collect(Collectors.toList());
-    }
+	    public List<String> findNearbyPartners(double latitude,double longitude,double radiusKm){
+	        Circle searchArea=new Circle(new Point(longitude,latitude),new Distance(radiusKm, Metrics.KILOMETERS));
+	        GeoResults<RedisGeoCommands.GeoLocation<String>> results = redisTemplate.opsForGeo().radius("deliverypartner:location", searchArea);
+	        if(results==null){
+	            return List.of();
+	        }
+	        return results.getContent().stream().map(result->result.getContent().getName()).collect(Collectors.toList());//partnerId
+	        
+	        
+	        
+	        
+	    }
+//    @Autowired
+//    private RedisTemplate<String, String> redisTemplate;
+//
+//
+//    private static final String KEY = "deliverypartner:location";
+//
+//    
+//    public String updateDPloc(Integer dpid, double latitude, double longitude) {
+//
+//        redisTemplate.opsForGeo()
+//                .add(KEY,
+//                        new Point(longitude, latitude), 
+//                        dpid.toString());
+//
+//        return "Location Updated Successfully";
+//    }
+//
+//  
+//    public List<String> findNearbyPartners(
+//            double latitude,
+//            double longitude,
+//            double radiusKm) {
+//
+//        Circle searchArea = new Circle(
+//                new Point(longitude, latitude),
+//                new Distance(radiusKm, Metrics.KILOMETERS)
+//        );
+//
+//        GeoResults<RedisGeoCommands.GeoLocation<String>> results =
+//                redisTemplate.opsForGeo().radius(KEY, searchArea);
+//
+//        if (results == null) {
+//            return List.of();
+//        }
+//
+//        return results.getContent()
+//                .stream()
+//                .map(result -> result.getContent().getName())
+//                .collect(Collectors.toList());
+//    }
 
 }

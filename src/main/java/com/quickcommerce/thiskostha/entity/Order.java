@@ -11,18 +11,25 @@ public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private Double cost;
     @Enumerated(EnumType.STRING)
     private PaymentStatus paymentStatus;
     private LocalDateTime orderTime;
     @Enumerated(EnumType.STRING)
     private OrderStatus deliveryStatus;
     private Integer otp;
+   
     private String deliveryInstructions;
     private String specialinstructions;
-    private Double deliveryCharges;
+    private Double distance;
     private LocalDateTime deliveryTime;
+ 
+
+    private Double cost;
+    private Double deliveryCharges;
     private Double packagingFee;
+    private Double platformFee ;
+    private Double tax;
+    private Double totalCost;
     @ManyToOne
     @JoinColumn(name = "restaurant_id")
     private Restaurant restaurant;
@@ -34,40 +41,44 @@ public class Order {
     @ManyToOne
     @JoinColumn(name="delivery_address_id")
     private Address deliveryAddress;
-
+    
     @OneToMany
     @JoinColumn(name="order_id")
- 
+    
     private List<CartItem> items;
-
+    
     @ManyToOne
     @JoinColumn(name = "customer_id")
     private Customer customer;
-
+    
     @ManyToOne
     @JoinColumn(name = "delivery_partner_id")
     private DeliveryPartner deliveryPartner;
-
+    
     @OneToOne(mappedBy="order",cascade = CascadeType.ALL)
     private Payment payment;
 
-	public Order(Long id, Double cost, PaymentStatus paymentStatus, LocalDateTime orderTime, OrderStatus deliveryStatus,
-			Integer otp, String deliveryInstructions, String specialinstructions, Double deliveryCharges,
-			LocalDateTime deliveryTime, Double packagingFee, Restaurant restaurant, Address pickupAddress,
-			Address deliveryAddress, List<CartItem> items, Customer customer, DeliveryPartner deliveryPartner,
-			Payment payment) {
+	public Order(Long id, PaymentStatus paymentStatus, LocalDateTime orderTime, OrderStatus deliveryStatus, Integer otp,
+			String deliveryInstructions, String specialinstructions, Double distance, LocalDateTime deliveryTime,
+			Double cost, Double deliveryCharges, Double packagingFee, Double platformFee, Double tax, Double totalCost,
+			Restaurant restaurant, Address pickupAddress, Address deliveryAddress, List<CartItem> items,
+			Customer customer, DeliveryPartner deliveryPartner, Payment payment) {
 		super();
 		this.id = id;
-		this.cost = cost;
 		this.paymentStatus = paymentStatus;
 		this.orderTime = orderTime;
 		this.deliveryStatus = deliveryStatus;
 		this.otp = otp;
 		this.deliveryInstructions = deliveryInstructions;
 		this.specialinstructions = specialinstructions;
-		this.deliveryCharges = deliveryCharges;
+		this.distance = distance;
 		this.deliveryTime = deliveryTime;
+		this.cost = cost;
+		this.deliveryCharges = deliveryCharges;
 		this.packagingFee = packagingFee;
+		this.platformFee = platformFee;
+		this.tax = tax;
+		this.totalCost = totalCost;
 		this.restaurant = restaurant;
 		this.pickupAddress = pickupAddress;
 		this.deliveryAddress = deliveryAddress;
@@ -88,14 +99,6 @@ public class Order {
 
 	public void setId(Long id) {
 		this.id = id;
-	}
-
-	public Double getCost() {
-		return cost;
-	}
-
-	public void setCost(Double cost) {
-		this.cost = cost;
 	}
 
 	public PaymentStatus getPaymentStatus() {
@@ -146,12 +149,12 @@ public class Order {
 		this.specialinstructions = specialinstructions;
 	}
 
-	public Double getDeliveryCharges() {
-		return deliveryCharges;
+	public Double getDistance() {
+		return distance;
 	}
 
-	public void setDeliveryCharges(Double deliveryCharges) {
-		this.deliveryCharges = deliveryCharges;
+	public void setDistance(Double distance) {
+		this.distance = distance;
 	}
 
 	public LocalDateTime getDeliveryTime() {
@@ -162,12 +165,52 @@ public class Order {
 		this.deliveryTime = deliveryTime;
 	}
 
+	public Double getCost() {
+		return cost;
+	}
+
+	public void setCost(Double cost) {
+		this.cost = cost;
+	}
+
+	public Double getDeliveryCharges() {
+		return deliveryCharges;
+	}
+
+	public void setDeliveryCharges(Double deliveryCharges) {
+		this.deliveryCharges = deliveryCharges;
+	}
+
 	public Double getPackagingFee() {
 		return packagingFee;
 	}
 
 	public void setPackagingFee(Double packagingFee) {
 		this.packagingFee = packagingFee;
+	}
+
+	public Double getPlatformFee() {
+		return platformFee;
+	}
+
+	public void setPlatformFee(Double platformFee) {
+		this.platformFee = platformFee;
+	}
+
+	public Double getTax() {
+		return tax;
+	}
+
+	public void setTax(Double tax) {
+		this.tax = tax;
+	}
+
+	public Double getTotalCost() {
+		return totalCost;
+	}
+
+	public void setTotalCost(Double totalCost) {
+		this.totalCost = totalCost;
 	}
 
 	public Restaurant getRestaurant() {
@@ -225,9 +268,10 @@ public class Order {
 	public void setPayment(Payment payment) {
 		this.payment = payment;
 	}
+	
+    
 
-	
-	
+
 	
 
 }
