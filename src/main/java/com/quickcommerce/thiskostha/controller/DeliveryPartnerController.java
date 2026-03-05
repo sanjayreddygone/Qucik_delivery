@@ -15,10 +15,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.quickcommerce.thiskostha.dto.DeliveryPartnerDTO;
+import com.quickcommerce.thiskostha.dto.LocationCordinates;
+import com.quickcommerce.thiskostha.dto.OrderResponse;
 import com.quickcommerce.thiskostha.dto.ResponseStructure;
 import com.quickcommerce.thiskostha.entity.DeliveryPartner;
 import com.quickcommerce.thiskostha.service.DeliveryPartnerService;
 import com.quickcommerce.thiskostha.service.RedisService;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 @RestController
 	@RequestMapping("/deliverypartner")
@@ -48,11 +52,20 @@ import com.quickcommerce.thiskostha.service.RedisService;
 	    }
 
 	    @PostMapping("/acceptorder")
-	    public String acceptorder(@RequestParam Long orderid, @RequestParam Long partnerid) {
-	        boolean accepted = deliveryPartnerService.acceptorder(orderid, partnerid);
+	    public ResponseEntity<ResponseStructure<OrderResponse>> acceptorder(@RequestParam Long orderid, @RequestParam Long partnerid) {
+	    	return  deliveryPartnerService.acceptorder(orderid, partnerid);
 
-	        return accepted ? "Order Assigned Successfully" : "Order Already Taken";
+	        
 	    }
+	    
+	    @GetMapping("/getDirectionstoRestaurant")
+	    public void getDirections(@RequestParam Long orderid,@RequestBody LocationCordinates cordinates,HttpServletResponse response) {
+	    	 deliveryPartnerService.getDirections(orderid,cordinates,response);
+
+	        
+	    }
+	    
+	    
 }
 
 	

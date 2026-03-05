@@ -42,45 +42,6 @@ public class RedisService {
 	        
 	        
 	    }
-//    @Autowired
-//    private RedisTemplate<String, String> redisTemplate;
-//
-//
-//    private static final String KEY = "deliverypartner:location";
-//
-//    
-//    public String updateDPloc(Integer dpid, double latitude, double longitude) {
-//
-//        redisTemplate.opsForGeo()
-//                .add(KEY,
-//                        new Point(longitude, latitude), 
-//                        dpid.toString());
-//
-//        return "Location Updated Successfully";
-//    }
-//
-//  
-//    public List<String> findNearbyPartners(
-//            double latitude,
-//            double longitude,
-//            double radiusKm) {
-//
-//        Circle searchArea = new Circle(
-//                new Point(longitude, latitude),
-//                new Distance(radiusKm, Metrics.KILOMETERS)
-//        );
-//
-//        GeoResults<RedisGeoCommands.GeoLocation<String>> results =
-//                redisTemplate.opsForGeo().radius(KEY, searchArea);
-//
-//        if (results == null) {
-//            return List.of();
-//        }
-//
-//        return results.getContent()
-//                .stream()
-//                .map(result -> result.getContent().getName())
-//                .collect(Collectors.toList());
-//    }
+
 
 }

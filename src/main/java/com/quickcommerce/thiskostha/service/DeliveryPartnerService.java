@@ -1,5 +1,7 @@
 package com.quickcommerce.thiskostha.service;
 
+import java.io.IOException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -9,11 +11,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import com.quickcommerce.thiskostha.dto.DeliveryPartnerDTO;
+import com.quickcommerce.thiskostha.dto.LocationCordinates;
+import com.quickcommerce.thiskostha.dto.OrderResponse;
 import com.quickcommerce.thiskostha.dto.ResponseStructure;
 import com.quickcommerce.thiskostha.entity.DeliveryPartner;
 import com.quickcommerce.thiskostha.entity.Order;
 import com.quickcommerce.thiskostha.repository.DeliveryPartnerRepository;
 import com.quickcommerce.thiskostha.repository.OrderRepository;
+
+import jakarta.servlet.http.HttpServletResponse;
 @Service
 public class DeliveryPartnerService {
 @Autowired
@@ -58,7 +64,7 @@ private RedisTemplate<String, String> redisTemplate;
 		return new ResponseEntity<ResponseStructure<DeliveryPartner>>(rs,HttpStatus.FOUND);
 	} 
 	
-	 public boolean acceptorder( Long orderid, Long partnerid) {
+	 public ResponseEntity<ResponseStructure<OrderResponse>> acceptorder( Long orderid, Long partnerid) {
 	        Order order = orderRepository.findById(orderid).orElseThrow(() -> new RuntimeException("Order not found"));
 	        DeliveryPartner deliveryPartner = deliveryPartnerRepo.findById(partnerid).orElseThrow(()
 	                -> new RuntimeException("partner not found"));
@@ -70,11 +76,46 @@ private RedisTemplate<String, String> redisTemplate;
 	            order.setDeliveryPartner(deliveryPartner);
 	            orderRepository.save(order);
 	            redisTemplate.delete("order:" + orderid);
+	            OrderResponse orderresponse=new OrderResponse();
+	            orderresponse.setId(order.getId());
+	            orderresponse.setDistance(order.getDistance());
+	            orderresponse.setDeliveryCharges(order.getDeliveryCharges());
+	            orderresponse.setPickupAddress(order.getPickupAddress());
+	            orderresponse.setDeliveryAddress(order.getDeliveryAddress());
+	            orderresponse.setTotalCost(order.getTotalCost());
+	            
+	            ResponseStructure<OrderResponse> rs=new ResponseStructure<OrderResponse>();
+	    		rs.setStatuscode(HttpStatus.ACCEPTED.value());
+	    		rs.setMessage("accepted order");
+	    		rs.setData(orderresponse);
+	    		
+	    		return new ResponseEntity<ResponseStructure<OrderResponse>>(rs,HttpStatus.ACCEPTED);
+	            
 
-	            return true;
+	           
 	        }
-	        return false;
+	        else {
+	        throw new RuntimeException("already locked");}
 	    }
+	 public void getDirections(Long orderid,LocationCordinates cordinates,HttpServletResponse response) {
+		 
+		  Order order = orderRepository.findById(orderid).orElseThrow(() -> new RuntimeException("Order not found"));
+		  double dplat = cordinates.getLatitude();
+		  double dplongi = cordinates.getLongitude();
+		  //restaurant cordinates
+		  double restlat = order.getRestaurant().getAddress().getLatitude();
+	      double restlongi = order.getRestaurant().getAddress().getLongitude();
+
+		   
+		 String getdir = "https://www.google.com/maps/dir/?api=1&origin=" + dplat + "," + dplongi + "&destination="
+			        + restlat + "," + restlongi + "&travelmode=driving";
+		 try {
+			response.sendRedirect(getdir);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	 }
 
 		}
 

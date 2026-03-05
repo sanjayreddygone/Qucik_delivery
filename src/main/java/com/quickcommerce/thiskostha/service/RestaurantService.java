@@ -7,6 +7,7 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -17,8 +18,10 @@ import com.quickcommerce.thiskostha.dto.RestaurantDTO;
 import com.quickcommerce.thiskostha.entity.Address;
 import com.quickcommerce.thiskostha.entity.Customer;
 import com.quickcommerce.thiskostha.entity.Item;
+import com.quickcommerce.thiskostha.entity.Order;
 import com.quickcommerce.thiskostha.entity.Restaurant;
 import com.quickcommerce.thiskostha.repository.CustomerRepository;
+import com.quickcommerce.thiskostha.repository.OrderRepository;
 import com.quickcommerce.thiskostha.repository.RestaurantRepository;
 
 @Service
@@ -26,8 +29,12 @@ public class RestaurantService {
 	@Autowired
 	private  RestaurantRepository restaurantRepo;
 	
-//	@Autowired
-//	private CustomerRepository customerRepo;
+	  @Autowired
+	    private RedisService redisService;
+	    @Autowired
+	    private RedisTemplate<String,String> redisTemplate;
+	    @Autowired
+	    private OrderRepository orderRepository;
 	
 	@Autowired
 	private RestTemplate restTemplate;
@@ -157,6 +164,18 @@ public class RestaurantService {
 		return new ResponseEntity<ResponseStructure<Item>>(rs,HttpStatus.OK);
 		
 	}
+	
+
+	    public List<String> acceptorder(double latitude, double longitude, long orderid) {
+	           Order order= orderRepository.findById(orderid).orElseThrow(()->new RuntimeException("Order does not exist"));
+	         List<String> nearbyPartners= redisService.findNearbyPartners(latitude,longitude,5.0);
+	         String orderKey= "order:"+orderid;
+	         for(String partnerid:nearbyPartners){
+	             Long size = redisTemplate.opsForSet().add(orderKey, partnerid);
+//	             
+	         }
+	          return nearbyPartners;
+	    }
 
 
 	
