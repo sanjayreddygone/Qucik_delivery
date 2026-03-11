@@ -48,7 +48,7 @@ public class CustomerController {
 		return customerService.deleteCustomer(phone);
 	}
 	
-	@PatchMapping("/addAddress")
+	@PatchMapping("/addAddress/{phone}")
 	public ResponseEntity<ResponseStructure<Address>> addAddrress(@PathVariable String phone,@RequestBody CustomerAddressDTO address ) {
 		return customerService.addAddress(phone,address);
 	}

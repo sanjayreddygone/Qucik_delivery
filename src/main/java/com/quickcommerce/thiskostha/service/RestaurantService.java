@@ -93,7 +93,7 @@ public class RestaurantService {
 		rs.setMessage("customer fteched successfully");
 		rs.setData(restaurant);
 		
-		return new ResponseEntity<ResponseStructure<Restaurant>>(HttpStatus.FOUND);	
+		return new ResponseEntity<ResponseStructure<Restaurant>>(rs,HttpStatus.FOUND);	
 		}
 	
 	

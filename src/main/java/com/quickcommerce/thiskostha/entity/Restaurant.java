@@ -47,7 +47,9 @@ public class Restaurant {
 		this.email = email;
 		this.description = description;
 		this.packagefees = packagefees;
+
 		this.status = status;
+		
 		this.type = type;
 		this.penality = penality;
 		this.wallet = wallet;
@@ -109,7 +111,9 @@ public class Restaurant {
 	}
 
 	public void setStatus(String status) {
+
 		this.status = status;
+		
 	}
 
 	public String getType() {
