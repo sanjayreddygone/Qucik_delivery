@@ -21,6 +21,8 @@ public class Restaurant {
     private String status;
    
 	private String type; 
+	private Double penality;
+	private Double wallet;
 
     @OneToMany(mappedBy="restaurant",cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Item> menuItems;
@@ -36,7 +38,8 @@ public class Restaurant {
 	}
 
 	public Restaurant(Long id, @NotBlank String name, @NotBlank String phone, @Email String email, String description,
-			Double packagefees, String status, String type, List<Item> menuItems, List<Order> orders, Address address) {
+			Double packagefees, String status, String type, Double penality, Double wallet, List<Item> menuItems,
+			List<Order> orders, Address address) {
 		super();
 		this.id = id;
 		this.name = name;
@@ -46,6 +49,8 @@ public class Restaurant {
 		this.packagefees = packagefees;
 		this.status = status;
 		this.type = type;
+		this.penality = penality;
+		this.wallet = wallet;
 		this.menuItems = menuItems;
 		this.orders = orders;
 		this.address = address;
@@ -115,6 +120,22 @@ public class Restaurant {
 		this.type = type;
 	}
 
+	public Double getPenality() {
+		return penality;
+	}
+
+	public void setPenality(Double penality) {
+		this.penality = penality;
+	}
+
+	public Double getWallet() {
+		return wallet;
+	}
+
+	public void setWallet(Double wallet) {
+		this.wallet = wallet;
+	}
+
 	public List<Item> getMenuItems() {
 		return menuItems;
 	}
@@ -139,6 +160,5 @@ public class Restaurant {
 		this.address = address;
 	}
 
-	
     
 }

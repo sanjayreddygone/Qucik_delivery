@@ -18,7 +18,7 @@ public class Customer {
     @Email private String email;
     private String gender;
     private Double wallet;
-    private Double fine;
+    private Double penality;
     
 //    mappedBy="customer",
     @OneToMany(mappedBy = "customer",cascade= CascadeType.ALL, orphanRemoval = true)
@@ -31,7 +31,7 @@ public class Customer {
     private List<CartItem> cart;
 
 	public Customer(Long id, @NotBlank String name, @NotBlank String phone, @Email String email, String gender,
-			Double wallet, Double fine, List<Address> addresses, List<Order> orders, List<CartItem> cart) {
+			Double wallet, Double penality, List<Address> addresses, List<Order> orders, List<CartItem> cart) {
 		super();
 		this.id = id;
 		this.name = name;
@@ -39,7 +39,7 @@ public class Customer {
 		this.email = email;
 		this.gender = gender;
 		this.wallet = wallet;
-		this.fine = fine;
+		this.penality = penality;
 		this.addresses = addresses;
 		this.orders = orders;
 		this.cart = cart;
@@ -93,12 +93,14 @@ public class Customer {
 		this.wallet = wallet;
 	}
 
-	public Double getFine() {
-		return fine;
+	
+
+	public Double getPenality() {
+		return penality;
 	}
 
-	public void setFine(Double fine) {
-		this.fine = fine;
+	public void setPenality(Double penality) {
+		this.penality = penality;
 	}
 
 	public List<Address> getAddresses() {
