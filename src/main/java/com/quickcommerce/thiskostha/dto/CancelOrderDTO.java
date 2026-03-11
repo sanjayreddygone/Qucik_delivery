@@ -1,3 +1,5 @@
+package com.quickcommerce.thiskostha.dto;
+
 public class CancelOrderDTO {
     private String orderId;
     private String phone;
