@@ -114,20 +114,20 @@ public class CouponRedemptionService {
         return new ResponseEntity<>(rs, HttpStatus.OK);
     }
     
-    /**
-     * Get discount amount without applying it (preview)
-     */
-    public double calculateDiscount(Integer couponId, Double orderTotal) {
-        Coupon coupon = couponRepo.findById(couponId)
-            .orElseThrow(() -> new RuntimeException("Coupon not found"));
-        
-        double discountAmount = (orderTotal * coupon.getOffer()) / 100;
-        
-        // Cap at max redeem price
-        if (discountAmount > coupon.getMaxRedeemPrice()) {
-            discountAmount = coupon.getMaxRedeemPrice();
-        }
-        
-        return discountAmount;
-    }
+//    /**
+//     * Get discount amount without applying it (preview)
+//     */
+//    public double calculateDiscount(Integer couponId, Double orderTotal) {
+//        Coupon coupon = couponRepo.findById(couponId)
+//            .orElseThrow(() -> new RuntimeException("Coupon not found"));
+//        
+//        double discountAmount = (orderTotal * coupon.getOffer()) / 100;
+//        
+//        // Cap at max redeem price
+//        if (discountAmount > coupon.getMaxRedeemPrice()) {
+//            discountAmount = coupon.getMaxRedeemPrice();
+//        }
+//        
+//        return discountAmount;
+    
 }

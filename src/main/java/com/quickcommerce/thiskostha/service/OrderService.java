@@ -8,6 +8,8 @@ import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import javax.management.RuntimeErrorException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -39,145 +41,195 @@ public class OrderService {
 
     @Value("${myapp.api.key}")
     private String apiKey;
+    @Autowired
+    private CouponRedemptionService couponRedemptionService;
+
+
+    public ResponseEntity<ResponseStructure<OrderConsent>> placeOrder(
+            String phone,
+            String method,
+            String addressType,
+            String deliveryInstructions,
+            String specialRequests,
+            Integer couponId) {
+
+        Customer customer = customerRepo.findByPhone(phone);
+        if (customer == null)
+            throw new RuntimeException("customer not found");
+
+        if (customer.getCart().isEmpty())
+            throw new RuntimeException("Cart is empty");
+
+        Restaurant restaurant = customer.getCart().get(0).getItem().getRestaurant();
+
+        if (restaurant.getStatus().equalsIgnoreCase("closed"))
+            throw new RuntimeException("restaurant is closed cant place order");
+
+        Address pickupAddress = restaurant.getAddress();
+
+        Address deliveryAddress = null;
+
+        for (Address a : customer.getAddresses()) {
+            if (a.getAddressType().equals(addressType)) {
+                deliveryAddress = a;
+            }
+        }
+
+        double startLon = restaurant.getAddress().getLongitude();
+        double startLat = restaurant.getAddress().getLatitude();
+        double endLon = deliveryAddress.getLongitude();
+        double endLat = deliveryAddress.getLatitude();
+
+        String coordinates = startLon + "," + startLat + ";" + endLon + "," + endLat;
+
+        String url = "https://us1.locationiq.com/v1/directions/driving/"
+                + coordinates
+                + "?key=" + apiKey
+                + "&overview=false"
+                + "&steps=false";
+
+        Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+
+        List<Map<String, Object>> routes =
+                (List<Map<String, Object>>) response.get("routes");
+
+        Map<String, Object> firstRoute = routes.get(0);
+
+        Double distanceMeters =
+                ((Double) firstRoute.get("distance")).doubleValue();
+
+        Double durationSeconds =
+                ((Double) firstRoute.get("duration")).doubleValue();
+
+        Double deliverycharges = null;
+
+        if (distanceMeters < 2000) {
+            deliverycharges = 0.0;
+        }
+        else if (distanceMeters < 10000 && distanceMeters > 2000) {
+            deliverycharges = (distanceMeters / 1000) * 10;
+        }
+        else {
+            throw new RuntimeException("order cant be delivered to this address");
+        }
+
+        deliverycharges = (double) Math.round(deliverycharges);
+
+        double cost = 0;
+
+        for (CartItem c : customer.getCart()) {
+
+            if (c.getItem().getAvailability().equalsIgnoreCase("not available"))
+                throw new RuntimeException(c.getItem().getName() + " is not available");
+
+            cost = cost + (c.getItem().getPrice() * c.getQuantity());
+        }
+
+        Order order = new Order();
+
+        order.setCustomer(customer);
+        order.setDeliveryStatus(OrderStatus.PENDING);
+        order.setPickupAddress(pickupAddress);
+        order.setDeliveryAddress(deliveryAddress);
+
+        order.setSpecialinstructions(specialRequests);
+        order.setDeliveryInstructions(deliveryInstructions);
+
+        order.setDeliveryPartner(null);
+        order.setOrderTime(LocalDateTime.now());
+
+        order.setDistance(distanceMeters / 1000);
+
+        order.setDeliveryCharges(deliverycharges);
+        order.setTax(cost * (18 / 100));
+        order.setPlatformFee(5.0);
+
+        order.setCost(cost);
+
+        order.setPackagingFee(restaurant.getPackagefees());
+
+        double tax = cost * (8 / 100);
+
+        double totalCost =
+                cost + deliverycharges + restaurant.getPackagefees() + tax + 5.0;
+
+        order.setTotalCost(totalCost);
+
+        
+        
+       if( customer.getPenality()>0) {
+    	   if(method.equalsIgnoreCase("cod")) {
+    		   throw new RuntimeException("cod not available");
+    	   }
+       }
+       Payment payment = new Payment();
+        payment.setMethod(method);
+
+        if (method.equalsIgnoreCase("COD"))
+            payment.setStatus(PaymentStatus.PENDING);
+        else
+            payment.setStatus(PaymentStatus.COMPLETED);
+
+        order.setPayment(payment);
+        payment.setOrder(order);
+
+        SecureRandom random = new SecureRandom();
+        int otp = 1000 + random.nextInt(9000);
+
+        order.setOtp(otp);
+
+        Order orderInitiated = orderRepo.save(order);
+
+        // APPLY COUPON
+        if (couponId != null) {
+
+            ResponseEntity<ResponseStructure<Double>> discountResponse =
+                    couponRedemptionService.redeemCoupon(couponId, orderInitiated.getId());
+
+            if (discountResponse.getStatusCode() == HttpStatus.OK) {
+
+                Double discount =
+                        discountResponse.getBody().getData();
+
+                double finalTotal =
+                        orderInitiated.getTotalCost() - discount;
+
+                if (finalTotal < 0)
+                    finalTotal = 0;
+
+                orderInitiated.setTotalCost(finalTotal);
+
+                orderRepo.save(orderInitiated);
+            }
+        }
+
+        double packagingFees = orderInitiated.getPackagingFee();
+        double gst = orderInitiated.getTax();
+        double platformFees = orderInitiated.getPlatformFee();
+        double TotalCost = orderInitiated.getTotalCost();
+
+        OrderConsent dto = new OrderConsent();
+
+        dto.setOrderId(orderInitiated.getId());
+        dto.setRestaurantName(restaurant.getName());
+        dto.setItemCost(cost);
+        dto.setDeliveryCharges(deliverycharges);
+        dto.setPackagingFees(packagingFees);
+        dto.setTax(gst);
+        dto.setPlatformFees(platformFees);
+        dto.setTotalCost(TotalCost);
+        dto.setDistance(distanceMeters);
+
+        ResponseStructure<OrderConsent> rs = new ResponseStructure<>();
+
+        rs.setData(dto);
+        rs.setMessage("Order Initiated, Do you wish to Confirm Order");
+        rs.setStatuscode(200);
+
+        return new ResponseEntity<>(rs, HttpStatus.OK);
+    }
+	
     
-	public ResponseEntity<ResponseStructure<OrderConsent>> placeOrder(String phone, String method, String addressType,
-			String deliveryInstructions, String specialRequests) {
-		
-		  Customer customer = customerRepo.findByPhone(phone);
-		  if(customer==null)throw new RuntimeException("customer not found");
-
-	        if(customer.getCart().isEmpty()){
-	            throw new RuntimeException("Cart is empty");
-	        }
-	       
-	        Restaurant restaurant = customer.getCart().get(0).getItem().getRestaurant();
-
-	           Address pickupAddress=restaurant.getAddress();
-	          
-	         Address deliveryAddress=null;
-	         for(Address a:customer.getAddresses()){
-	             if(a.getAddressType().equals(addressType)){
-	                 deliveryAddress=a;
-	             }
-	         }
-	       
-
-	         double startLon = restaurant.getAddress().getLongitude();
-	        double startLat = restaurant.getAddress().getLatitude();
-	        double endLon = deliveryAddress.getLongitude();
-	        double endLat = deliveryAddress.getLatitude();
-	
-	        String coordinates = startLon + "," + startLat + ";" + endLon + "," + endLat;
-	        String url = "https://us1.locationiq.com/v1/directions/driving/"
-	                + coordinates
-	                + "?key=" + apiKey
-	                + "&overview=false"
-	                + "&steps=false";
-	        
-	        Map<String, Object> response = restTemplate.getForObject(url, Map.class);
-	        List<Map<String, Object>> routes = (List<Map<String, Object>>) response.get("routes");
-	
-	        Map<String, Object> firstRoute = routes.get(0);
-	        Double distanceMeters = ((Double) firstRoute.get("distance")).doubleValue();
-	        Double durationSeconds = ((Double) firstRoute.get("duration")).doubleValue();
-	        
-		      
-	         Double deliverycharges = null;
-	        if(distanceMeters < 2000.00) {
-	            deliverycharges = 0.00;
-	        }
-	        else if(distanceMeters < 10000.00 && distanceMeters > 2000.00) {
-	            deliverycharges = (distanceMeters / 1000) * 10;
-	        }
-	        else {
-	            throw new RuntimeException("order cant be delivered to this address");
-	        }
-	      
-	         deliverycharges=(double) Math.round(deliverycharges);
-	         
-	         double cost=0;
-
-	         for( CartItem c:customer.getCart()){
-
-	             cost=cost+(c.getItem().getPrice()*c.getQuantity());
-	                     }
-	         Order order=new Order();
-	         
-		        order.setCustomer(customer);
-		        order.setDeliveryStatus(OrderStatus.PENDING);
-	
-		        order.setPickupAddress(pickupAddress);
-		        order.setDeliveryAddress(deliveryAddress);
-		
-		        order.setSpecialinstructions(specialRequests);
-	            order.setDeliveryInstructions(deliveryInstructions);
-	        
-	            order.setDeliveryPartner(null);
-	            order.setOrderTime(LocalDateTime.now());
-	        
-	            order.setDistance(distanceMeters/1000);
-	            
-	            order.setDeliveryCharges(deliverycharges);
-                order.setTax(cost*(18/100));
-	            order.setPlatformFee(5.0);
-//	       
-
-	            order.setCost(cost);
-
-	           order.setPackagingFee(restaurant.getPackagefees());
-	           double tax=cost*(8/100);
-	           
-	           double totalCost= (cost + deliverycharges+ restaurant.getPackagefees() + tax );
-
-		        order.setTotalCost(totalCost+5.00);
-	
-	          Payment payment=new Payment();
-
-	          payment.setMethod(method);
-	          if(method.equalsIgnoreCase("COD")){
-	              payment.setStatus(PaymentStatus.PENDING);
-	          }else{
-	              payment.setStatus(PaymentStatus.COMPLETED);
-	          }
-	          order.setPayment(payment);
-	           payment.setOrder(order);
-
-
-	        SecureRandom random=new SecureRandom();
-	        int otp= 1000 + random.nextInt(9000);
-	        order.setOtp(otp);
-
-	        Order orderinitiated=  orderRepo.save(order);
-	        
-	        
-
-	           
-	        double packagingFees= order.getPackagingFee();
-	        double gst = order.getTax();
-	        double platformFees= order.getPlatformFee();
-	        double TotalCost= order.getTotalCost();
-
-	       
-	        OrderConsent dto = new OrderConsent();
-
-	        dto.setOrderId(orderinitiated.getId());
-	        dto.setRestaurantName(restaurant.getName());
-	        dto.setItemCost(cost);
-	        dto.setDeliveryCharges(deliverycharges);
-	        dto.setPackagingFees(packagingFees);
-	        dto.setTax(tax);
-	        dto.setPlatformFees(platformFees);
-	        dto.setTotalCost(totalCost);
-	        dto.setDistance(distanceMeters);
-
-	        ResponseStructure<OrderConsent> rs = new ResponseStructure<>();
-	        rs.setData(dto);
-	        rs.setMessage("Order Initiated,Do you wish to Confirm Order");
-	        rs.setStatuscode(200);
-	        return new ResponseEntity<ResponseStructure<OrderConsent>>(rs, HttpStatus.OK);
-	    }
-
-	
 
 	    public ResponseEntity<ResponseStructure<Order>> denyPlacingOrder(Long orderid) {
 	        Order order = orderRepo.findById(orderid)
@@ -211,38 +263,144 @@ public class OrderService {
 	       return  new ResponseEntity<ResponseStructure<Order>>(rs,HttpStatus.OK);
 	    }
 
-
-	    @Autowired
-	    private CouponRedemptionService couponRedemptionService;
-
-	    
-	    public ResponseEntity<ResponseStructure<Order>> placeOrderWithCoupon(
-	        Long orderId,
-	         Integer couponId) {
-	        
-	        if (couponId != null) {
-	            // Apply coupon and get discount
-	            ResponseEntity<ResponseStructure<Double>> discountResponse = 
-	                couponRedemptionService.redeemCoupon(couponId, orderId);
-	            
-	            if (discountResponse.getStatusCode() == HttpStatus.OK) {
-	                Double discountAmount = discountResponse.getBody().getData();
-	                // Order is already updated with discounted amount
-	                Order order = orderRepo.findById(orderId).get();
-	                // Proceed with payment on the discounted amount
-	            }
-	        }
-	        
-	        Order finalOrder = orderRepo.findById(orderId).get();
-	        ResponseStructure<Order> rs = new ResponseStructure<>();
-	        rs.setStatuscode(HttpStatus.OK.value());
-	        rs.setMessage("Order placed with discount applied");
-	        rs.setData(finalOrder);
-	        
-	        return new ResponseEntity<>(rs, HttpStatus.OK);
-	    }
-	
-	
-
 	
 }
+
+
+//public ResponseEntity<ResponseStructure<OrderConsent>> placeOrder(String phone, String method, String addressType,
+//		String deliveryInstructions, String specialRequests) {
+//	
+//	  Customer customer = customerRepo.findByPhone(phone);
+//	  if(customer==null)throw new RuntimeException("customer not found");
+//
+//        if(customer.getCart().isEmpty()){
+//            throw new RuntimeException("Cart is empty");
+//        }
+//       
+//        Restaurant restaurant = customer.getCart().get(0).getItem().getRestaurant();
+//        if(restaurant.getStatus().equalsIgnoreCase("closed")) {throw new RuntimeException("restaurant is closed cant place order");}
+//
+//           Address pickupAddress=restaurant.getAddress();
+//          
+//         Address deliveryAddress=null;
+//         for(Address a:customer.getAddresses()){
+//             if(a.getAddressType().equals(addressType)){
+//                 deliveryAddress=a;
+//             }
+//         }
+//       
+//
+//         double startLon = restaurant.getAddress().getLongitude();
+//        double startLat = restaurant.getAddress().getLatitude();
+//        double endLon = deliveryAddress.getLongitude();
+//        double endLat = deliveryAddress.getLatitude();
+//
+//        String coordinates = startLon + "," + startLat + ";" + endLon + "," + endLat;
+//        String url = "https://us1.locationiq.com/v1/directions/driving/"
+//                + coordinates
+//                + "?key=" + apiKey
+//                + "&overview=false"
+//                + "&steps=false";
+//        
+//        Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+//        List<Map<String, Object>> routes = (List<Map<String, Object>>) response.get("routes");
+//
+//        Map<String, Object> firstRoute = routes.get(0);
+//        Double distanceMeters = ((Double) firstRoute.get("distance")).doubleValue();
+//        Double durationSeconds = ((Double) firstRoute.get("duration")).doubleValue();
+//        
+//	      
+//         Double deliverycharges = null;
+//        if(distanceMeters < 2000.00) {
+//            deliverycharges = 0.00;
+//        }
+//        else if(distanceMeters < 10000.00 && distanceMeters > 2000.00) {
+//            deliverycharges = (distanceMeters / 1000) * 10;
+//        }
+//        else {
+//            throw new RuntimeException("order cant be delivered to this address");
+//        }
+//      
+//         deliverycharges=(double) Math.round(deliverycharges);
+//         
+//         double cost=0;
+//
+//         for( CartItem c:customer.getCart()){
+//        	if( c.getItem().getAvailability().equalsIgnoreCase("not available")) {throw new RuntimeException(c.getItem().getName()+"is not available");}
+//             cost=cost+(c.getItem().getPrice()*c.getQuantity());
+//                     }
+//         Order order=new Order();
+//         
+//	        order.setCustomer(customer);
+//	        order.setDeliveryStatus(OrderStatus.PENDING);
+//
+//	        order.setPickupAddress(pickupAddress);
+//	        order.setDeliveryAddress(deliveryAddress);
+//	
+//	        order.setSpecialinstructions(specialRequests);
+//            order.setDeliveryInstructions(deliveryInstructions);
+//        
+//            order.setDeliveryPartner(null);
+//            order.setOrderTime(LocalDateTime.now());
+//        
+//            order.setDistance(distanceMeters/1000);
+//            
+//            order.setDeliveryCharges(deliverycharges);
+//            order.setTax(cost*(18/100));
+//            order.setPlatformFee(5.0);
+////       
+//
+//            order.setCost(cost);
+//
+//           order.setPackagingFee(restaurant.getPackagefees());
+//           double tax=cost*(8/100);
+//           
+//           double totalCost= (cost + deliverycharges+ restaurant.getPackagefees() + tax );
+//
+//	        order.setTotalCost(totalCost+5.00);
+//
+//          Payment payment=new Payment();
+//
+//          payment.setMethod(method);
+//          if(method.equalsIgnoreCase("COD")){
+//              payment.setStatus(PaymentStatus.PENDING);
+//          }else{
+//              payment.setStatus(PaymentStatus.COMPLETED);
+//          }
+//          order.setPayment(payment);
+//           payment.setOrder(order);
+//
+//
+//        SecureRandom random=new SecureRandom();
+//        int otp= 1000 + random.nextInt(9000);
+//        order.setOtp(otp);
+//
+//        Order orderinitiated=  orderRepo.save(order);
+//        
+//        
+//
+//           
+//        double packagingFees= order.getPackagingFee();
+//        double gst = order.getTax();
+//        double platformFees= order.getPlatformFee();
+//        double TotalCost= order.getTotalCost();
+//
+//       
+//        OrderConsent dto = new OrderConsent();
+//
+//        dto.setOrderId(orderinitiated.getId());
+//        dto.setRestaurantName(restaurant.getName());
+//        dto.setItemCost(cost);
+//        dto.setDeliveryCharges(deliverycharges);
+//        dto.setPackagingFees(packagingFees);
+//        dto.setTax(tax);
+//        dto.setPlatformFees(platformFees);
+//        dto.setTotalCost(totalCost);
+//        dto.setDistance(distanceMeters);
+//
+//        ResponseStructure<OrderConsent> rs = new ResponseStructure<>();
+//        rs.setData(dto);
+//        rs.setMessage("Order Initiated,Do you wish to Confirm Order");
+//        rs.setStatuscode(200);
+//        return new ResponseEntity<ResponseStructure<OrderConsent>>(rs, HttpStatus.OK);
+//    }

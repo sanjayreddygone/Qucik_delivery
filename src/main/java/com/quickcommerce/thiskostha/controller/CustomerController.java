@@ -75,8 +75,9 @@ public class CustomerController {
             @RequestParam String method,
             @RequestParam String addressType, 
             @RequestParam String deliveryInstructions,
-            @RequestParam String specialInstructions) {
-        return orderService.placeOrder(phone, method, addressType,deliveryInstructions,specialInstructions);
+            @RequestParam String specialInstructions,
+            @RequestParam int cuoponId) {
+        return orderService.placeOrder(phone, method, addressType,deliveryInstructions,specialInstructions,cuoponId);
     }
 	
 	
@@ -98,12 +99,12 @@ public class CustomerController {
 	        
 	    }
 	    
-	    @PostMapping("/placeorderWithCoupon")
-	    public ResponseEntity<ResponseStructure<Order>> placeOrderWithCoupon(
-	        @RequestParam Long orderId,
-	        @RequestParam Integer couponId) {
-	    	
-	    	return orderService.placeOrderWithCoupon(orderId,couponId);
-	    }
-	    
 }
+//	    @PostMapping("/placeorderWithCoupon")
+//	    public ResponseEntity<ResponseStructure<Order>> placeOrderWithCoupon(
+//	        @RequestParam Long orderId,
+//	        @RequestParam Integer couponId) {
+//	    	
+//	    	return orderService.placeOrderWithCoupon(orderId,couponId);
+//	    }
+//	    
