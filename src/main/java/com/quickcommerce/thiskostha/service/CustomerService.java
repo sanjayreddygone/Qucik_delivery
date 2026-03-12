@@ -1,6 +1,7 @@
 package com.quickcommerce.thiskostha.service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -245,14 +246,14 @@ public class CustomerService {
 		    adr.setStreet(address.getStreet());
 		    adr.setAddressType(address.getAddressType());
 		    adr.setIsDefault(address.getIsDefault());
-		    
+		    adr.setCustomer(customer);
 		    if(customer.getAddresses()==null) {
-				customer.setAddresses(Arrays.asList(adr));
+		    	customer.setAddresses(new ArrayList<>(Arrays.asList(adr)));
 			}else {
 				customer.getAddresses().add(adr);
 				}
 		 customerRepo.save(customer);
-		 addressRepository.save(adr);
+//		 addressRepository.save(adr);
 		 ResponseStructure<Address> rs = new ResponseStructure<Address>();
 			rs.setStatuscode(HttpStatus.CREATED.value());
 			rs.setMessage("customer saved successfully");

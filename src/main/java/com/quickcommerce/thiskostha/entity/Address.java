@@ -1,5 +1,7 @@
 package com.quickcommerce.thiskostha.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 
 @Entity
@@ -28,6 +30,7 @@ public class Address {
     private String addressType;
     private Boolean isDefault;
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name="customer_id")
     private Customer customer;
 	public Address(Long id, Double latitude, Double longitude, String flatNumber, String floor, String buildingName,
