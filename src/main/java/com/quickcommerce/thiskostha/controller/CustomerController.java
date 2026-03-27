@@ -25,6 +25,8 @@ import com.quickcommerce.thiskostha.entity.Order;
 import com.quickcommerce.thiskostha.service.CustomerService;
 import com.quickcommerce.thiskostha.service.OrderService;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/customer")
 public class CustomerController {
@@ -34,7 +36,7 @@ public class CustomerController {
 	private OrderService orderService;
      
 	@PostMapping("/register")
-	public ResponseEntity<ResponseStructure<Customer>> register(@RequestBody CustomerDTO customerdto) {
+	public ResponseEntity<ResponseStructure<Customer>> register(@Valid @RequestBody CustomerDTO customerdto) {
 		return customerService.register(customerdto);
 	}
 

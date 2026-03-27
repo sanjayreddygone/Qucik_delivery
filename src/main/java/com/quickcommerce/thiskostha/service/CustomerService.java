@@ -32,6 +32,7 @@ import com.quickcommerce.thiskostha.repository.CustomerRepository;
 import com.quickcommerce.thiskostha.repository.ItemRepository;
 import com.quickcommerce.thiskostha.repository.OrderRepository;
 import com.quickcommerce.thiskostha.repository.RestaurantRepository;
+import com.quickcommerce.thiskostha.service.emailService.EmailService;
 
 @Service
 public class CustomerService {
@@ -52,6 +53,9 @@ public class CustomerService {
     @Value("${myapp.api.key}")
     private String apiKey;
 
+    @Autowired
+    private EmailService emailService;
+
 
 	public ResponseEntity<ResponseStructure<Customer>> register(CustomerDTO customerdto) {
 		Customer customer = new Customer();
@@ -61,10 +65,15 @@ public class CustomerService {
 		customer.setGender(customerdto.getGender());
 
 		customerRepo.save(customer);
+		String subject="Thiskostha registration successfull";
+		String body="Greetings "+customerdto.getName()+" welcome to Thiskotha family continue your happy meals ";
+		
+		emailService.sendEmail(customerdto.getEmail(),subject,body);
 		ResponseStructure<Customer> rs = new ResponseStructure<Customer>();
 		rs.setStatuscode(HttpStatus.CREATED.value());
 		rs.setMessage("customer saved successfully");
 		rs.setData(customer);
+		
 
 		return new ResponseEntity<ResponseStructure<Customer>>(rs, HttpStatus.CREATED);
 

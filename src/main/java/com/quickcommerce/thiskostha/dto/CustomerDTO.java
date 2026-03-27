@@ -1,11 +1,14 @@
 package com.quickcommerce.thiskostha.dto;
 
-
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 
 public class CustomerDTO {
-	   private String name;
-	   private String phone;
-	   private String email;
+	 @NotBlank (message = "name should not be blank")
+	 private String name;
+	    @NotBlank private String phone;
+	    @Email (message = "email is in wrong format")
+	    private String email;
 	   private String gender;
 	   public CustomerDTO(String name, String phone, String email, String gender) {
 		super();
