@@ -102,11 +102,4 @@ public class CustomerController {
 	    }
 	    
 }
-//	    @PostMapping("/placeorderWithCoupon")
-//	    public ResponseEntity<ResponseStructure<Order>> placeOrderWithCoupon(
-//	        @RequestParam Long orderId,
-//	        @RequestParam Integer couponId) {
-//	    	
-//	    	return orderService.placeOrderWithCoupon(orderId,couponId);
-//	    }
-//	    
+    
