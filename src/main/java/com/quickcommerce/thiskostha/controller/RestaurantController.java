@@ -28,7 +28,7 @@ public class RestaurantController {
 	@Autowired
 	private RestaurantService restaurantService;
 @PostMapping("/register")
-public ResponseEntity<ResponseStructure<Restaurant>> register (@RequestBody RestaurantDTO restaurantdto){
+public ResponseEntity<ResponseStructure<Restaurant>> register ( @RequestBody RestaurantDTO restaurantdto){
 	return restaurantService.register(restaurantdto);
 }
 
